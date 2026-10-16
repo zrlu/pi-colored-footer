@@ -1,56 +1,87 @@
 # pi-colored-footer
 
-A [Pi](https://pi.dev) extension that replaces Pi's default status row with a
-full-width, color-blocked line. It uses only Pi's public `ctx.ui.setFooter()`
-API and the packages Pi's extension loader supplies, so no edits to Pi's
-installed source, bundle, or launcher are required.
+A [Pi](https://pi.dev) extension that **replaces** Pi's default footer with a
+version that draws every status as a full-width, background-colored block — all
+on one row. It uses only Pi's public `ctx.ui.setFooter()` API and the packages
+Pi's extension loader already supplies, so nothing in Pi's installed source,
+bundle, or launcher is patched.
 
-## What Pi already shows
+## What Pi's default footer looks like
 
-The footer itself is Pi's own; this extension leaves these rows untouched:
+Out of the box, Pi's footer is three dim rows:
 
-- A dim row with the working directory, git branch, and session name.
-- A dim row with usage totals (`↑` input, `↓` output, `R` cache read, `W` cache
-  write, `CH<rate>%`, `$cost`), context percentage/window, and the selected model
-  (with provider when more than one provider is available). This extension moves
-  the usage totals, context, and model parts into its own block row (see below).
-- Any remaining extension statuses on a separate row.
+1. The working directory (relative to `~`), the git branch, and the session name.
+2. Usage totals (`↑` input, `↓` output, `R` cache read, `W` cache write,
+   `CH<rate>%`, `$cost`), the context percentage / window, and the selected model
+   (shown with its provider when more than one provider is available).
+3. Extension statuses registered with `ctx.ui.setStatus(...)`.
 
 ## What this extension changes
 
-Only the status row. The statuses emitted by the plugins you run are drawn as
-full-width background-colored blocks instead of plain text. The usage totals, the
-context percentage/window, and the selected model are drawn as colored blocks in
-the same row, so they take part in the same ordering and coloring. The usage
-totals and the context share a single `stats` block, so they sit together in one
-component like Pi's original row; the model is its own block. Each block is
-weighted by its longest observed display width during the current Pi process, and
-foreground colors set by the plugins (and the warning/error tint on the context
-part of `stats`) are preserved.
+It replaces that footer. The data is the same; the layout is not:
 
-While drawing, each slot's remaining text width is broadcast on the shared
-`pi.events` bus as `pi.footer.slotWidth` (`{ key, width }`). Extensions that own a
-slot can subscribe to trim their status to fit. For example `pi-backend-start`
-uses it to show `🟢 uptime:2h`, fall back to `🟢 2h`, or the light alone as the
-`backend` slot narrows.
+- **Row 1** is Pi's dim path / branch / session line, unchanged.
+- **Row 2** renders the usage totals + context, the selected model, and every
+  plugin status as adjacent, background-colored blocks, left to right:
+  - the usage totals and the context share a single `stats` block, kept together
+    exactly like Pi's own row;
+  - the model is its own `model` block;
+  - each plugin status is its own block.
+- Any status that does **not** belong to a configured block is still shown,
+  unchanged, on a plain row below.
 
-Statuses that are not part of a configured slot still appear, unchanged, on the
-remaining extension status row.
+Each block is weighted by the longest text it has shown during the current Pi
+process, so the row stays stable as values change. The foreground colors a plugin
+sets are preserved, including the warning / error tint Pi applies to the context
+once it climbs past 70% / 90%.
+
+While drawing, the room left for each slot's text is broadcast on the shared
+`pi.events` bus as `pi.footer.slotWidth` (`{ key, width }`). An extension that
+owns a slot can subscribe and trim its status to fit the space it gets — for
+example `pi-backend-start` narrows `🟢 uptime:2h` to `🟢 2h` and then to the dot
+alone as the `backend` block shrinks.
+
+## Example
+
+With a few footer plugins installed, their statuses become colored blocks next to
+the built-in `stats` and `model` blocks. Each square below stands in for that
+block's background color (the real footer paints the whole block, not just a
+leading square):
+
+```
+~/.pi/agent (main) • my-session
+⬛ ↑466k ↓90k R4.9M CH95.1% 12.3%/200k  🟦 🟢 backend:2h  🟪 dsh-minimal  🟩 42.0 t/s  🟫 (local-opencode-free) deepseek-v4.1-flash-free • low
+```
+
+| Swatch | Block | Background (RGB) | Contents |
+| ------ | ----- | ---------------- | -------- |
+| `⬛` | `stats` | `44,52,58` | usage totals + context |
+| `🟦` | `backend` | `38,58,76` | the `pi-backend-start` status |
+| `🟪` | `dsh-minimal` | `55,43,73` | the `pi-dsh-minimal` status |
+| `🟩` | `tokenSpeed` | `30,65,59` | the `pi-token-speed` status |
+| `🟫` | `model` | `58,46,62` | the selected model |
+
+`backend`, `dsh-minimal`, and `tokenSpeed` are just the plugin slots that ship
+preconfigured; they are examples, not a fixed set. Any plugin that calls
+`setStatus` shows up as its own block, and the recipe for adding a slot is in
+[Notes](#notes).
 
 ## Reordering the blocks
 
 The blocks are drawn left to right in a configurable order. The built-in slots
 `stats` (usage totals + context) and `model` come from the footer itself; the
-plugin slots are `backend`, `dsh-minimal`, and `tokenSpeed`. The default order is
-`stats → backend → dsh-minimal → tokenSpeed → model`. The order is
-stored in `~/.pi/agent/pi-colored-footer.json` (`{"order": ["stats", ...]}`).
+plugin slots shipped by default are `backend`, `dsh-minimal`, and `tokenSpeed`.
+The default order is `stats → backend → dsh-minimal → tokenSpeed → model`. The
+order is stored in `~/.pi/agent/pi-colored-footer.json`
+(`{"order": ["stats", ...]}`).
 
 Run `/footer` to open an interactive reorder screen listing each block with its
 color swatch and current text. Plugin blocks also show the owning extension
-(`key · extension-name`); the built-in `stats` and `model` blocks are not labeled. Since Pi's footer API only exposes status key → text, the owner is
-inferred by scanning the installed extension sources for their `setStatus("<key>")`
-call. The rows are ordered top-to-bottom exactly as the blocks appear
-left-to-right in the footer, and the preview updates as you go:
+(`key · extension-name`); the built-in `stats` and `model` blocks are not labeled.
+Since Pi's footer API only exposes status key → text, the owner is inferred by
+scanning the installed extension sources for their `setStatus("<key>")` call. The
+rows are ordered top-to-bottom exactly as the blocks appear left-to-right in the
+footer, and the preview updates as you go:
 
 - `↑` / `↓` move the selection (or the block you are holding).
 - `space` grabs the selected block, and again drops it.
@@ -67,14 +98,6 @@ For scripting, the same command still accepts arguments:
 
 The command autocompletes its action names and slot keys, and changes take effect
 immediately (no `/reload` needed).
-
-## Example
-
-Run it alongside whatever footer plugins you have. For example, with
-`pi-backend-start`, `pi-dsh-minimal`, and `pi-token-speed` installed, their three
-statuses are rendered as three colored blocks:
-
-<!-- screenshot of the footer -->
 
 ## Install
 
@@ -96,7 +119,7 @@ Move this directory outside `extensions` and run `/reload`.
 ## Notes
 
 The color-block row is built in `layout.ts`. The slots and their background colors
-are defined there. Adding a plugin slot to `FOOTER_SLOT_COLORS` also makes it
+are defined there (`FOOTER_SLOT_COLORS`). Adding a plugin slot there also makes it
 reorderable through `/footer`; the extension fills that slot from the matching
 plugin status. The built-in `stats` and `model` slots are listed in
 `BUILTIN_SLOT_KEYS` and their text is computed in `index.ts` before the row is

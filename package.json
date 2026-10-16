@@ -1,7 +1,7 @@
 {
   "name": "pi-colored-footer",
   "version": "0.1.0",
-  "description": "Pi extension that draws extension statuses as a full-width, background-colored row in the Pi footer, on top of Pi's own cwd/branch/session, usage, context and model rows.",
+  "description": "Pi extension that replaces Pi's default footer with a single full-width row of background-colored blocks: usage totals + context, the selected model, and each plugin status.",
   "keywords": [
     "pi",
     "pi-package",
