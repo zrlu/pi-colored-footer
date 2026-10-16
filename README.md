@@ -48,22 +48,22 @@ the built-in `stats` and `model` blocks.
 
 GitHub strips inline `style` / `class` / `id` from Markdown, so a background
 color cannot be set with HTML in a README. The only thing that paints a real
-background on GitHub is a rendered image, so the row below is a committed SVG
-([`docs/footer-example.svg`](docs/footer-example.svg)) that draws the exact
-blocks, colors, and text of the live footer — no external service, so it always
-renders. It is one line, blocks adjacent, exactly like the live footer.
+background on GitHub is a rendered image, so the row below is a committed
+screenshot ([`docs/footer-example.png`](docs/footer-example.png)) of the live
+footer — one line, blocks adjacent, exactly as rendered:
 
-![pi-colored-footer example](docs/footer-example.svg)
+![pi-colored-footer example](docs/footer-example.png)
 
 Same row as plain text (copy-paste / terminal):
 
 ```
 ~/.pi/agent (main) • my-session
-⬛ ↑466k ↓90k R4.9M CH95.1% 12.3%/200k  🟦 backend:2h  🟪 dsh-minimal  🟩 42.0 t/s  🟫 (local-opencode-free) deepseek-v4.1-flash-free • low
+⬛ ↑743k ↓186k R10.0M CH99.4% 21.0%/200k  🟩 116.5 t/s  🟪 dsh anchored • promoted • all models  🟦 uptime: 15m  🟫 (local-opencode-free) deepseek-v4.1-flash-free • low
 ```
 
 The emoji square only stands in for the color; the real footer paints the whole
-block (a `48;2;R;G;B` ANSI background), and the SVG above shows that full block.
+block (a `48;2;R;G;B` ANSI background), and the screenshot above shows that
+full block.
 
 | Swatch | Block | Background (RGB) | Hex | Contents |
 | ------ | ----- | ---------------- | --- | -------- |
