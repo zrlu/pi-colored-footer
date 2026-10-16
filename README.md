@@ -44,22 +44,41 @@ alone as the `backend` block shrinks.
 ## Example
 
 With a few footer plugins installed, their statuses become colored blocks next to
-the built-in `stats` and `model` blocks. Each square below stands in for that
-block's background color (the real footer paints the whole block, not just a
-leading square):
+the built-in `stats` and `model` blocks.
+
+GitHub strips inline `style` / `class` / `id` from Markdown, so a background
+color cannot be set with HTML in a README. The row below is therefore drawn with
+[shields.io](https://shields.io) badges, painted with the exact RGB each block
+uses — a badge is the only way to get a real background color to render on
+GitHub. It is one line, blocks adjacent, exactly like the live footer.
+
+First line, unchanged:
 
 ```
 ~/.pi/agent (main) • my-session
-⬛ ↑466k ↓90k R4.9M CH95.1% 12.3%/200k  🟦 🟢 backend:2h  🟪 dsh-minimal  🟩 42.0 t/s  🟫 (local-opencode-free) deepseek-v4.1-flash-free • low
 ```
 
-| Swatch | Block | Background (RGB) | Contents |
-| ------ | ----- | ---------------- | -------- |
-| `⬛` | `stats` | `44,52,58` | usage totals + context |
-| `🟦` | `backend` | `38,58,76` | the `pi-backend-start` status |
-| `🟪` | `dsh-minimal` | `55,43,73` | the `pi-dsh-minimal` status |
-| `🟩` | `tokenSpeed` | `30,65,59` | the `pi-token-speed` status |
-| `🟫` | `model` | `58,46,62` | the selected model |
+Rendered row:
+
+![stats](https://img.shields.io/static/v1?label=&message=%E2%86%91466k%20%E2%86%9390k%20R4.9M%20CH95.1%25%2012.3%25%2F200k&color=2C343A&style=flat-square) ![backend](https://img.shields.io/static/v1?label=&message=backend%3A2h&color=263A4C&style=flat-square) ![dsh-minimal](https://img.shields.io/static/v1?label=&message=dsh-minimal&color=372B49&style=flat-square) ![tokenSpeed](https://img.shields.io/static/v1?label=&message=42.0%20t%2Fs&color=1E413B&style=flat-square) ![model](https://img.shields.io/static/v1?label=&message=%28local-opencode-free%29%20deepseek-v4.1-flash-free%20%E2%80%A2%20low&color=3A2E3E&style=flat-square)
+
+Same row as plain text (copy-paste / terminal):
+
+```
+~/.pi/agent (main) • my-session
+⬛ ↑466k ↓90k R4.9M CH95.1% 12.3%/200k  🟦 backend:2h  🟪 dsh-minimal  🟩 42.0 t/s  🟫 (local-opencode-free) deepseek-v4.1-flash-free • low
+```
+
+The emoji square only stands in for the color; the real footer paints the whole
+block (a `48;2;R;G;B` ANSI background), and the badge above shows that full block.
+
+| Swatch | Block | Background (RGB) | Badge color | Contents |
+| ------ | ----- | ---------------- | ----------- | -------- |
+| `⬛` | `stats` | `44,52,58` | `#2C343A` | usage totals + context |
+| `🟦` | `backend` | `38,58,76` | `#263A4C` | the `pi-backend-start` status |
+| `🟪` | `dsh-minimal` | `55,43,73` | `#372B49` | the `pi-dsh-minimal` status |
+| `🟩` | `tokenSpeed` | `30,65,59` | `#1E413B` | the `pi-token-speed` status |
+| `🟫` | `model` | `58,46,62` | `#3A2E3E` | the selected model |
 
 `backend`, `dsh-minimal`, and `tokenSpeed` are just the plugin slots that ship
 preconfigured; they are examples, not a fixed set. Any plugin that calls
