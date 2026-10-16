@@ -1,0 +1,45 @@
+{
+  "name": "pi-colored-footer",
+  "version": "0.1.0",
+  "description": "Pi extension that draws extension statuses as a full-width, background-colored row in the Pi footer, on top of Pi's own cwd/branch/session, usage, context and model rows.",
+  "keywords": [
+    "pi",
+    "pi-package",
+    "pi-extension",
+    "footer",
+    "status-line",
+    "tui"
+  ],
+  "license": "MIT",
+  "author": "zrlu",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/zrlu/pi-colored-footer.git"
+  },
+  "homepage": "https://github.com/zrlu/pi-colored-footer#readme",
+  "bugs": {
+    "url": "https://github.com/zrlu/pi-colored-footer/issues"
+  },
+  "type": "module",
+  "pi": {
+    "extensions": [
+      "./index.ts"
+    ]
+  },
+  "files": [
+    "index.ts",
+    "layout.ts",
+    "config.ts",
+    "reorder.ts",
+    "owners.ts",
+    "README.md",
+    "LICENSE"
+  ],
+  "peerDependencies": {
+    "@earendil-works/pi-coding-agent": "*",
+    "@earendil-works/pi-tui": "*"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}
