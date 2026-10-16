@@ -47,20 +47,13 @@ With a few footer plugins installed, their statuses become colored blocks next t
 the built-in `stats` and `model` blocks.
 
 GitHub strips inline `style` / `class` / `id` from Markdown, so a background
-color cannot be set with HTML in a README. The row below is therefore drawn with
-[shields.io](https://shields.io) badges, painted with the exact RGB each block
-uses — a badge is the only way to get a real background color to render on
-GitHub. It is one line, blocks adjacent, exactly like the live footer.
+color cannot be set with HTML in a README. The only thing that paints a real
+background on GitHub is a rendered image, so the row below is a committed SVG
+([`docs/footer-example.svg`](docs/footer-example.svg)) that draws the exact
+blocks, colors, and text of the live footer — no external service, so it always
+renders. It is one line, blocks adjacent, exactly like the live footer.
 
-First line, unchanged:
-
-```
-~/.pi/agent (main) • my-session
-```
-
-Rendered row:
-
-![stats](https://img.shields.io/static/v1?label=&message=%E2%86%91466k%20%E2%86%9390k%20R4.9M%20CH95.1%25%2012.3%25%2F200k&color=2C343A&style=flat-square) ![backend](https://img.shields.io/static/v1?label=&message=backend%3A2h&color=263A4C&style=flat-square) ![dsh-minimal](https://img.shields.io/static/v1?label=&message=dsh-minimal&color=372B49&style=flat-square) ![tokenSpeed](https://img.shields.io/static/v1?label=&message=42.0%20t%2Fs&color=1E413B&style=flat-square) ![model](https://img.shields.io/static/v1?label=&message=%28local-opencode-free%29%20deepseek-v4.1-flash-free%20%E2%80%A2%20low&color=3A2E3E&style=flat-square)
+![pi-colored-footer example](docs/footer-example.svg)
 
 Same row as plain text (copy-paste / terminal):
 
@@ -70,10 +63,10 @@ Same row as plain text (copy-paste / terminal):
 ```
 
 The emoji square only stands in for the color; the real footer paints the whole
-block (a `48;2;R;G;B` ANSI background), and the badge above shows that full block.
+block (a `48;2;R;G;B` ANSI background), and the SVG above shows that full block.
 
-| Swatch | Block | Background (RGB) | Badge color | Contents |
-| ------ | ----- | ---------------- | ----------- | -------- |
+| Swatch | Block | Background (RGB) | Hex | Contents |
+| ------ | ----- | ---------------- | --- | -------- |
 | `⬛` | `stats` | `44,52,58` | `#2C343A` | usage totals + context |
 | `🟦` | `backend` | `38,58,76` | `#263A4C` | the `pi-backend-start` status |
 | `🟪` | `dsh-minimal` | `55,43,73` | `#372B49` | the `pi-dsh-minimal` status |
