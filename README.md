@@ -90,6 +90,11 @@ order is stored in `~/.pi/agent/pi-colored-footer.json`
 Run `/footer` to open an interactive reorder screen listing each block with its
 color swatch and current text. Plugin blocks also show the owning extension
 (`key · extension-name`); the built-in `stats` and `model` blocks are not labeled.
+The first settings row is `Multiline: [ON/OFF]`: press space on that row (or `m`
+anywhere) to toggle it, Enter to save, or Escape to discard the preview. This
+saves both the layout mode and the block order in `pi-colored-footer.json`.
+Multiline rows distribute their remaining space between their colored blocks,
+so every row's background fills the terminal width, including the final row.
 Since Pi's footer API only exposes status key → text, the owner is inferred by
 scanning the installed extension sources for their `setStatus("<key>")` call. The
 rows are ordered top-to-bottom exactly as the blocks appear left-to-right in the
@@ -106,10 +111,27 @@ For scripting, the same command still accepts arguments:
 - `/footer order <key...>` sets the full left-to-right order. Keys you omit are
   appended after the ones you list, in their previous order.
 - `/footer up <key>` / `/footer down <key>` move one block one step.
+- `/footer multiline [on|off]` switches the block row between single-line and
+  multiline mode (no argument toggles it).
 - `/footer reset` restores the default order.
 
 The command autocompletes its action names and slot keys, and changes take effect
 immediately (no `/reload` needed).
+
+## Multiline mode
+
+By default every block is squeezed onto a single row and each block's text is
+truncated to the share of the row it is allotted. Run `/footer multiline on` to
+switch to multiline mode: each block keeps its **full** text (nothing is
+truncated) and the blocks wrap onto as many rows as the terminal width allows.
+The number of rows is recomputed from the live window width on every render,
+  so resizing the terminal reflows the footer automatically. A block that is
+wider than the whole window is the only one that may still be clipped, and it
+gets a row of its own.
+
+The setting is stored in `~/.pi/agent/pi-colored-footer.json` alongside the
+block order (`"multiline": true`). `/footer multiline off` (or a bare
+`/footer multiline` to toggle) returns to the single-row layout.
 
 ## Install
 
@@ -135,5 +157,8 @@ are defined there (`FOOTER_SLOT_COLORS`). Adding a plugin slot there also makes 
 reorderable through `/footer`; the extension fills that slot from the matching
 plugin status. The built-in `stats` and `model` slots are listed in
 `BUILTIN_SLOT_KEYS` and their text is computed in `index.ts` before the row is
-rendered. The saved order is read and written by `config.ts`, and the interactive
-reorder screen lives in `reorder.ts`.
+rendered. The single-row layout is `renderPluginStatuses`; the multiline variant
+is `renderPluginStatusesMultiline`, which keeps each block's full text and wraps
+onto as many rows as the window width allows. The saved order and the multiline
+flag are read and written by `config.ts`, and the interactive reorder screen
+lives in `reorder.ts`.

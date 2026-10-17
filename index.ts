@@ -2,7 +2,7 @@ import type { ExtensionAPI, ExtensionContext } from '@earendil-works/pi-coding-a
 import { truncateToWidth } from '@earendil-works/pi-tui';
 import { homedir } from 'node:os';
 import { relative, isAbsolute, sep } from 'node:path';
-import { renderPluginStatuses, DEFAULT_FOOTER_ORDER, FOOTER_SLOT_KEYS } from './layout.ts';
+import { renderPluginStatuses, renderPluginStatusesMultiline, DEFAULT_FOOTER_ORDER, FOOTER_SLOT_KEYS } from './layout.ts';
 import { readColoredFooterConfig, writeColoredFooterConfig, normalizeOrder } from './config.ts';
 import { openFooterReorder } from './reorder.ts';
 import { detectSlotOwners } from './owners.ts';
@@ -11,7 +11,9 @@ const fmt = (n: number) => n < 1000 ? `${n}` : n < 10000 ? `${(n / 1000).toFixed
 
 export default function coloredFooter(pi: ExtensionAPI) {
  let current: ExtensionContext;
- let order = readColoredFooterConfig().order;
+ const initialConfig = readColoredFooterConfig();
+ let order = initialConfig.order;
+ let multiline = initialConfig.multiline;
  let requestRender: (() => void) | undefined;
  let latestBlocks: ReadonlyMap<string, string> = new Map();
  const lastSlotWidth = new Map<string, number>();
@@ -84,7 +86,9 @@ export default function coloredFooter(pi: ExtensionAPI) {
       const extra = [...statuses].filter(([key]) => !FOOTER_SLOT_KEYS.includes(key)).map(([, text]) => text.replace(/[\r\n\t]/g, ' '));
       return [
        truncateToWidth(theme.fg('dim', pathLine), width, '…'),
-        ...renderPluginStatuses(blocks, width, order, reportSlot),
+        ...(multiline
+         ? renderPluginStatusesMultiline(blocks, width, order, reportSlot)
+         : renderPluginStatuses(blocks, width, order, reportSlot)),
        ...(extra.length ? [truncateToWidth(extra.join('  '), width, '…')] : []),
       ];
      },
@@ -96,20 +100,21 @@ export default function coloredFooter(pi: ExtensionAPI) {
   pi.on(event, (_event, ctx) => { current = ctx; });
  }
  pi.registerCommand('footer', {
-  description: 'Reorder the colored footer blocks (opens an interactive screen); args: order <key...> | up <key> | down <key> | reset',
+  description: 'Reorder the colored footer blocks (opens an interactive screen); args: order <key...> | up <key> | down <key> | multiline [on|off] | reset',
   getArgumentCompletions: prefix => {
    const head = prefix.trim().toLowerCase();
-   return ['order', 'up', 'down', 'reset', ...FOOTER_SLOT_KEYS]
+   return ['order', 'up', 'down', 'reset', 'multiline', ...FOOTER_SLOT_KEYS]
     .filter(value => value.startsWith(head))
     .map(value => ({ label: value, value }));
   },
   handler: async (args, ctx) => {
    const tell = (message, kind = 'info') => ctx.hasUI ? ctx.ui.notify(message, kind) : console.log(message);
-   const summary = () => `Footer blocks: ${order.join(' → ')}`;
-   const save = (next: string[]) => {
-    const result = writeColoredFooterConfig({ order: next });
+   const summary = () => `Footer blocks: ${order.join(' → ')}${multiline ? ' (multiline)' : ''}`;
+   const save = (nextOrder: string[], nextMultiline: boolean = multiline) => {
+    const result = writeColoredFooterConfig({ order: nextOrder, multiline: nextMultiline });
     if (!result.ok) { tell(`Failed to save footer settings: ${result.error}`, 'error'); return; }
-    order = normalizeOrder(next, order);
+    order = normalizeOrder(nextOrder, order);
+    multiline = nextMultiline;
     requestRender?.();
     tell(summary());
    };
@@ -118,15 +123,24 @@ export default function coloredFooter(pi: ExtensionAPI) {
    if (!action) {
     if (ctx.mode === 'tui' && ctx.hasUI) {
      const original = [...order];
+     const originalMultiline = multiline;
       const owners = detectSlotOwners(order);
-      const result = await openFooterReorder(ctx, { order, statuses: latestBlocks, owners }, next => { order = next; requestRender?.(); });
-     if (result) { save(result); } else { order = original; requestRender?.(); }
+      const result = await openFooterReorder(ctx, { order, multiline, statuses: latestBlocks, owners }, next => { order = next.order; multiline = next.multiline; requestRender?.(); });
+     if (result) { save(result.order, result.multiline); } else { order = original; multiline = originalMultiline; requestRender?.(); }
      return;
     }
     tell(summary());
     return;
    }
-   if (action === 'reset') { save([...DEFAULT_FOOTER_ORDER]); return; }
+   if (action === 'reset') { save([...DEFAULT_FOOTER_ORDER], false); return; }
+   if (action === 'multiline') {
+    const arg = (parts[1] ?? '').toLowerCase();
+    if (arg === 'on' || arg === 'true' || arg === 'yes') { save(order, true); return; }
+    if (arg === 'off' || arg === 'false' || arg === 'no') { save(order, false); return; }
+    if (!arg) { save(order, !multiline); return; }
+    tell('Usage: /footer multiline [on|off]', 'warning');
+    return;
+   }
    if (action === 'order') {
     const requested = parts.slice(1);
     if (!requested.length) { tell('Usage: /footer order <key...>', 'warning'); return; }
@@ -144,7 +158,7 @@ export default function coloredFooter(pi: ExtensionAPI) {
     save(next);
     return;
    }
-   tell('Usage: /footer [order <key...>|up <key>|down <key>|reset]', 'warning');
+   tell('Usage: /footer [order <key...>|up <key>|down <key>|multiline [on|off]|reset]', 'warning');
   },
  });
 }

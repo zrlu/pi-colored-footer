@@ -8,17 +8,21 @@ export interface FooterReorderInput {
  order: string[];
  statuses: ReadonlyMap<string, string>;
  owners?: ReadonlyMap<string, string>;
+ multiline: boolean;
 }
+export interface FooterSettings { order: string[]; multiline: boolean; }
 
 // Interactive block reorder screen. Resolves to the new order, or null when cancelled.
 export async function openFooterReorder(
  ctx: ExtensionContext,
  input: FooterReorderInput,
- onPreview: (order: string[]) => void,
-): Promise<string[] | null> {
+ onPreview: (settings: FooterSettings) => void,
+): Promise<FooterSettings | null> {
  const clean = (text: string) => String(text).replace(/\x1b\[[0-9;:]*m/g, '').replace(/[\r\n\t]/g, ' ').replace(/ +/g, ' ').trim();
- return ctx.ui.custom<string[] | null>((tui, theme, _kb, done) => {
+ return ctx.ui.custom<FooterSettings | null>((tui, theme, _kb, done) => {
   let items = [...input.order];
+  let multiline = input.multiline;
+  const settings = () => ({ order: [...items], multiline });
   let cursor = 0;
   let grabbed = false;
   let inputWidth = 40;
@@ -29,11 +33,12 @@ export async function openFooterReorder(
    render(width: number) {
     inputWidth = width;
     const lines = [...border()];
-    lines.push(theme.fg('accent', theme.bold('Reorder footer blocks')));
+    lines.push(theme.fg('accent', theme.bold('Footer configuration')));
+    lines.push(line(`${cursor === 0 ? '❯' : ' '} Multiline: ${multiline ? '[ON]' : '[OFF]'}  (space to toggle)`));
     lines.push(theme.fg('dim', 'Left to right = top to bottom.'));
     lines.push('');
     items.forEach((key, index) => {
-     const selected = index === cursor;
+     const selected = index + 1 === cursor;
      const held = selected && grabbed;
      const pointer = selected ? (held ? '◆' : '❯') : ' ';
      const pointerStyled = theme.fg(selected ? 'accent' : 'dim', pointer);
@@ -51,26 +56,27 @@ export async function openFooterReorder(
     lines.push('');
     const hint = grabbed
      ? '↑↓ move • space drop • enter save • r reset • esc cancel'
-     : '↑↓ select • space grab • enter save • r reset • esc cancel';
+     : '↑↓ select • space toggle/grab • m multiline • enter save • esc cancel';
     lines.push(theme.fg('dim', hint));
     lines.push(...border());
     return lines;
    },
    handleInput(data: string) {
     if (matchesKey(data, Key.escape) || matchesKey(data, Key.ctrl('c')) || data === 'q') { done(null); return; }
-    if (matchesKey(data, Key.enter)) { done([...items]); return; }
+    if (matchesKey(data, Key.enter)) { done(settings()); return; }
     if (matchesKey(data, Key.up) || data === 'k') { move(-1); return; }
     if (matchesKey(data, Key.down) || data === 'j') { move(1); return; }
+    if (data === 'm' || (data === ' ' && cursor === 0)) { multiline = !multiline; onPreview(settings()); tui.requestRender(); return; }
     if (data === ' ') { grabbed = !grabbed; tui.requestRender(); return; }
-    if (data === 'r') { items = [...DEFAULT_FOOTER_ORDER]; cursor = 0; grabbed = false; onPreview([...items]); tui.requestRender(); return; }
+    if (data === 'r') { items = [...DEFAULT_FOOTER_ORDER]; multiline = false; cursor = 0; grabbed = false; onPreview(settings()); tui.requestRender(); return; }
    },
   };
   const move = (delta: number) => {
    const target = cursor + delta;
-   if (target < 0 || target >= items.length) return;
-   if (grabbed) [items[cursor], items[target]] = [items[target], items[cursor]];
+   if (target < (grabbed ? 1 : 0) || target > items.length) return;
+   if (grabbed) [items[cursor - 1], items[target - 1]] = [items[target - 1], items[cursor - 1]];
    cursor = target;
-   onPreview([...items]);
+   onPreview(settings());
    tui.requestRender();
   };
   return component;
